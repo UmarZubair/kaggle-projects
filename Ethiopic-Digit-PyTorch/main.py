@@ -10,8 +10,8 @@ from torchvision import transforms
 from torch.utils.data import random_split
 from utils import EthiopicDataset, make_csv, TestEthioipic
 
-TRAIN_DATA = 'data/train'
-TEST_DATA = 'data/test'
+TRAIN_DATA = 'dataset/train'
+TEST_DATA = 'dataset/test'
 MODEL_PATH = 'model/model.pth'
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
