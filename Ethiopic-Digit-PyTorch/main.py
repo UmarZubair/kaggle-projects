@@ -1,7 +1,6 @@
 import argparse
 import glob
 import numpy as np
-import pandas as pd
 import torch.optim
 from torch.utils.data import DataLoader
 import torch.nn as nn
