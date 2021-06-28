@@ -12,20 +12,27 @@ def user_based_filtering(user_id, info):
     if info == 'yes':
         dataset.explore_dataset()
     data_matrix = dataset.create_matrix()
-    selected_user = data_matrix[user_id]
+    selected_user = data_matrix.iloc[user_id]
     movie_idx = []
     movie_pred = []
+    similarities = []
     for item in range(len(selected_user)):
-        if np.isnan(selected_user[item]):
+        if np.isnan(selected_user.iloc[item]):
             for user in data_matrix:
-                movie_pred.append(pred(selected_user, user, item))
+                similarity, prediction = pred(selected_user, user, item)
+                movie_pred.append(prediction)
                 movie_idx.append(item)
-
-    print("=" * 8)
+                similarities.append(similarity)
+    similarities = np.array(similarities)
+    print('User selected: {}'.format(user_id))
+    print("=" * 20)
+    print('10 most similar users: \n{}'.format(similarities[similarities.argsort()[-10:][::-1]]))
+    print("=" * 20)
+    print('20 most relevant movies: {}'.format(user_id))
 
 
 def pred(a, b, item_p):
-    return 0
+    return 1.1,1
 
 
 def sim(a, b):
