@@ -2,8 +2,6 @@ import argparse
 import numpy as np
 from utils import NetflixDataset
 from scipy.stats import pearsonr
-import pandas as pd
-
 DATA_PATH = 'dataset'
 
 
@@ -18,25 +16,53 @@ def user_based_filtering(user_id, info):
     similarities = []
     for item in range(len(selected_user)):
         if np.isnan(selected_user.iloc[item]):
-            for user in data_matrix:
-                similarity, prediction = pred(selected_user, user, item)
-                movie_pred.append(prediction)
-                movie_idx.append(item)
-                similarities.append(similarity)
-    similarities = np.array(similarities)
+            for i in range(len(data_matrix)):
+                user = data_matrix.iloc[i]
+                if np.isfinite(user.iloc[item]):
+                    prediction = pred(selected_user, user, item)
+                    movie_pred.append(prediction)
+                    movie_idx.append(item)
+                    # similarities.append(similarity)
+    # similarities = np.array(similarities)
+    movie_pred = np.array(movie_pred)
+    movie_idx = np.array(movie_idx)
     print('User selected: {}'.format(user_id))
     print("=" * 20)
-    print('10 most similar users: \n{}'.format(similarities[similarities.argsort()[-10:][::-1]]))
+    # print('10 most similar users: \n{}'.format(similarities[similarities.sort()[-10:][::-1]]))
     print("=" * 20)
-    print('20 most relevant movies: {}'.format(user_id))
+    print('20 most relevant movies: {}'.format(np.sort(movie_idx)[-20:]))
+
+
+def most_similar_users(target_user, no_users, data):
+    similarities = []
+    idx = []
+    for user in range(len(data)):
+        a , b, index= rated_by_both_(target_user,data.iloc[user])
+        similarities.append(sim(a, b))
+        idx.append(index)
+
+    simi = np.argsort(similarities)[-no_users:]
+    similarities = np.sort(np.array(similarities))[-no_users:]
+
+    return similarities,simi
 
 
 def pred(a, b, item_p):
-    return 1.1,1
+    rbp = b.iloc[item_p]
+    a, b = rated_by_both(a, b)
+    sim_ = sim(a, b)
+    rb = np.mean(b)
+    ra = np.mean(a)
+    pred_ = (ra + (sim_ * (rbp - rb))) / sim_
+    return pred_
 
 
 def sim(a, b):
-    distance = pearsonr(a, b)[0]
+    if len(a) < 2 or np.isnan(pearsonr(a, b)[0]):
+        distance = 0
+    else:
+        distance = pearsonr(a, b)[0]
+
     return distance
 
 
@@ -49,11 +75,30 @@ def rated_by_both(a, b):
      function will return [3,3],[2,4]
 
     """
+    a = np.array(a)
+    b = np.array(b)
     idx = []
     for i in range(len(a)):
         if np.isfinite(a[i]) and np.isfinite(b[i]):
             idx.append(i)
     return a[idx], b[idx]
+
+
+def rated_by_both_(a, b):
+    """
+    Returns the items that both the users have rated.
+    Example:
+     user a rated items [4, 3, nan, 3]
+     user b rated items [nan, 2, 3, 4]
+     function will return [3,3],[2,4]
+
+    """
+    a = np.array(a)
+    b = np.array(b)
+    a_ = np.where(np.isfinite(a))
+    b_ = np.where(np.isfinite(b))
+    idx = np.intersect1d(a_, b_)
+    return a[idx], b[idx], idx
 
 
 def get_rating(a, b):
@@ -78,33 +123,14 @@ def check():
 
 
 def test():
-    # names = ['user_id', 'item_id', 'rating', 'timestamp']
-    # check = pd.read_csv(os.path.join(DATA_PATH, 'u.data'), '\t', names=names, engine='python')
-    # print(check.iloc[[10]])
-
-    users = []
-    users.append([5, 3, 1, 2, 5, 3])
-    users.append([2, 4, 4, 1, 2, 5])
-    users.append([4, 3, 1, np.nan, 4, 3])
-    users.append([1, 5, 4, np.nan, np.nan, np.nan])
-    users = np.array(users)
-    df = pd.DataFrame(data=users)
-    print(df.head())
-    r_user = users[3]
-    simi = []
-    for user in users:
-        simi.append(sim(user, r_user))
-    print(simi)
-    # df = df.fillna(df.mean(axis=1),axis=1)
-    recommended_rating, movie_id = get_rating(r_user, users[1])
-    print('Recommended movie:{}'.format(movie_id + 1))
-    print('Rating:{}'.format(recommended_rating))
-    # sim = []
-    # for user in a:
-    #    sim.append(pearsonr(user, b)[0])
-
-    # print(sim)
-    # print(sim(a,c))
+    dataset = NetflixDataset(DATA_PATH)
+    data_matrix = dataset.create_matrix()
+    user = data_matrix.iloc[0]
+    a, b = rated_by_both_(user,data_matrix.iloc[38])
+    print(sim(a,b))
+    most_similar, index = most_similar_users(user, 20, data_matrix)
+    print(sim())
+    print(index)
 
 
 if __name__ == "__main__":
